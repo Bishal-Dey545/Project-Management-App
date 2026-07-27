@@ -1,4 +1,42 @@
 import Mailgen from "mailgen";
+import nodemailer from "nodemailer"
+
+const sendEmail = async (options) => {
+    const mailGenerator = new Mailgen({
+        theme: "default",
+        product: {
+            name: "Task Manager",
+            link: "https://taskmanagelink.com"
+        }
+    })
+
+    const emailTextual = mailGenerator.generatePlaintext(options.mailgenContent)
+    const emailHtml = mailGenerator.generate(options.mailgenContent)
+
+    const transporter = nodemailer.createTransport({
+        host: process.env.MAILTRAP_SMTP_HOST,
+        port: process.env.MAILTRAP_SMTP_PORT,
+        auth: {
+            user: process.env.MAILTRAP_SMTP_USER,
+            pass: process.env.MAILTRAP_SMTP_PASS
+        }
+    })
+
+    const mail = {
+        from: "mail.taskmanager@example.com", // maybe my email
+        to: options.email, // receivers e-address
+        subject: options.subject,
+        text: emailTextual,
+        html: emailHtml
+    }
+
+    try {
+        await transporter.sendMail(mail)
+    } catch (error) {
+        console.error("Email service failed silently. Make sure that you have provided your mailtrap credentials in the .env file")
+        console.error("Error: ",error)
+    }
+}
 
 const emailVerificationMailGenContent = (username, verificationUrl) => {
     return {
@@ -38,5 +76,10 @@ const forgotPasswordMailGenContent = (username, passwordResetUrl) => {
 
 export {
     emailVerificationMailGenContent,
-    forgotPasswordMailGenContent
+    forgotPasswordMailGenContent,
+    sendEmail
 }
+
+// sending an email
+// for production email we use AWS SES(simple email service) or Brevo
+// for testing purpose we use mailtrap
